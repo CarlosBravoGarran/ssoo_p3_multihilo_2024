@@ -10,9 +10,13 @@ struct element {
   int units;      //Product units
 };
 
-typedef struct queue {
+typedef struct s_queue {
   // Define the struct yourself
-  int param1;
+  struct element *elements;
+  int capacity;
+  int head;
+  int tail;
+  int count;
 }queue;
 
 queue* queue_init (int size);
