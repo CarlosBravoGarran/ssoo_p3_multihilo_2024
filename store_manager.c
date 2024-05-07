@@ -160,10 +160,7 @@ int main(int argc, const char *argv[])
     int max_ops_per_cons;
 
     
-    //t_consumer_results *resultados = malloc(num_consumers * sizeof(t_consumer_results)); 
-    t_consumer_results *resultados;
-
-    resultados = malloc(num_consumers * sizeof(t_consumer_results));
+    t_consumer_results *resultados = malloc(num_consumers * sizeof(t_consumer_results)); 
     for (int i = 0; i < num_consumers; i++)
     {
         resultados[i].profit = 0;
@@ -197,13 +194,11 @@ int main(int argc, const char *argv[])
 
     for (int i = 0; i < num_consumers; i++)
     {
-        void *result;
+        void *thread_result;
 
-        pthread_join(consumer_threads[i], &result);
-        t_consumer_results *res = (t_consumer_results *)result;
-        printf("Profit: %d\n", res->profit);
-     profits += res->profit;
-     printf("prof %d\n", res->profit);
+        pthread_join(consumer_threads[i], &thread_result);
+        t_consumer_results *result = (t_consumer_results *)thread_result;
+     profits += result->profit;
     }
 
 
@@ -236,8 +231,6 @@ void *consumer(void *arg)
 {
     //printf("Hilo consumidor creado\n");
     int max_op = *((int*)arg);
-    //int *profit = args->profits;
-    //int *product_stock = args->product_stock;
     int ops_realizadas = 0;
     t_consumer_results *result = malloc(sizeof(t_consumer_results));
     result->profit = 0;
@@ -259,7 +252,6 @@ void *consumer(void *arg)
         {
             int price = purchase_price[operation->product_id-1];
             aux_profit -=  operation->units * price;
-            //printf("%d\n", aux_profit);
             result->product_stock[operation->product_id-1] += operation->units;
 
         }
@@ -267,7 +259,6 @@ void *consumer(void *arg)
         {
             int price = unit_price[operation->product_id-1];
             aux_profit += operation->units * price;
-            //printf("%d\n", aux_profit);
             result->product_stock[operation->product_id-1] -= operation->units;
         }
         ops_realizadas ++;
