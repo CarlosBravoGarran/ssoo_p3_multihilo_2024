@@ -25,7 +25,6 @@
 // Estructura para pasar los argumentos al hilo productor
 struct ProducerArgs {
     int start_index;
-    int end_index;
     queue *queue; // Cola compartida
     FILE *file;     // Archivo de entrada
 };
