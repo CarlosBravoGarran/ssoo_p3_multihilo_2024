@@ -26,12 +26,11 @@ typedef struct ProducerArgs
 }t_producer_args;
 
 // Estructura para pasar argumentos al hilo consumidor
-typedef struct ConsumerArgs 
+typedef struct ConsumerResults 
 {
-    int *profits;        // Puntero a las ganancias
-    int *product_stock;  // Puntero al stock de productos
-    int max_op;          // Número máximo de operaciones
-}t_consumer_arg;
+    int profit;        // Puntero a las ganancias
+    int product_stock[5];  // Puntero al stock de productos
+}t_consumer_results;
 
 queue *buffer;
 pthread_mutex_t mutex;
@@ -95,7 +94,6 @@ int main(int argc, const char *argv[])
 
     // Reservar memoria para todas las operaciones
     t_producer_args * argumentos_prod = malloc(num_producers * sizeof(t_producer_args));
-    t_consumer_arg * argumentos_cons = malloc(num_consumers * sizeof(t_consumer_arg));
     struct element *operations = malloc(num_operations * sizeof(struct element));
     if (operations == NULL) 
     {
@@ -166,20 +164,19 @@ int main(int argc, const char *argv[])
     // Calcular número de operaciones por consumidor
     int ops_per_cons = num_operations / num_consumers;
     int extra_ops_cons = num_operations % num_consumers;
+    int max_ops_per_cons;
 
     // Creación de hilos consumidores
     pthread_t consumer_threads[num_consumers];
     for (int i = 0; i < num_consumers; i++)
     {
-        argumentos_cons[i].profits = &profits;
-        argumentos_cons[i].product_stock = product_stock;
-        argumentos_cons[i].max_op = ops_per_cons;
+        max_ops_per_cons = ops_per_cons;
         if (extra_ops_cons != 0)
         {
-            argumentos_cons[i].max_op += extra_ops_cons;
+            max_ops_per_cons += extra_ops_cons;
             extra_ops_cons = 0;
         }
-        if (pthread_create(&consumer_threads[i], NULL, consumer, &argumentos_cons[i]) != 0)
+        if (pthread_create(&consumer_threads[i], NULL, consumer, &max_ops_per_cons) != 0)
         {
             perror("ERROR creating consumer thread\n");
             exit(EXIT_FAILURE);
@@ -225,12 +222,9 @@ int main(int argc, const char *argv[])
 void *consumer(void *arg)
 {
     printf("Hilo consumidor creado\n");
-    t_consumer_arg *args = (t_consumer_arg *) arg;
     int ops_realizadas = 0;
-    int *profits = args->profits;
-    int *product_stock = args->product_stock;
-    int max_op = args->max_op;
-    struct element *operation = malloc(sizeof(struct element));
+    int max_op = *((int *) arg);
+    t_consumer_results *result = malloc(sizeof(t_consumer_results));
 
     while (ops_realizadas < max_op)
     {
@@ -239,19 +233,20 @@ void *consumer(void *arg)
         {
             pthread_cond_wait(&condConsumers, &mutex);
         }
+        struct element *operation = malloc(sizeof(struct element));
         operation = queue_get(buffer);
         
         if (operation->op == 1)
         {
-            int price = purchase_price[operation->product_id];
-            *profits -= price * operation->units;
-            product_stock[operation->product_id] += operation->units;
+            int price = purchase_price[operation->product_id - 1];
+            result->profit -= price * operation->units;
+            result->product_stock[operation->product_id - 1] += operation->units;
         }
         else
         {
-            int price = unit_price[operation->product_id];
-            *profits += price * operation->units;
-            product_stock[operation->product_id] -= operation->units;
+            int price = unit_price[operation->product_id - 1];
+            result->profit += price * operation->units;
+            result->product_stock[operation->product_id - 1] -= operation->units;
         }
         ops_realizadas++;
         pthread_cond_signal(&condProducers);
