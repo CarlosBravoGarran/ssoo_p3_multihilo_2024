@@ -5,9 +5,9 @@
 
 
 struct element {
-  int product_id; //Product identifier
+  int product_id;   //Product identifier
   int op;         //Operation
-  int units;      //Product units
+  int units;        //Product units
 };
 
 typedef struct s_queue {

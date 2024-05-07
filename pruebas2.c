@@ -13,8 +13,8 @@
 #include <sys/wait.h>
 
 #define MAX_FILENAME_LENGTH 100
-#define PURCHASE 1
-#define SALE 2
+//#define PURCHASE 1
+//#define SALE 2
 
 
 // Array para almacenar el numero de operaciones de estructuras de tipo element para pasarselo a cada hilo 
@@ -47,7 +47,7 @@ void *consumer(void *arg);
 
 int main(int argc, const char *argv[]) 
 {
-    // Variablencls
+    // Variables
     int profits = 0;
     int product_stock[5] = {0};
 
@@ -89,7 +89,6 @@ int main(int argc, const char *argv[])
     }
     printf("%d \n", num_operations);
 
-
     // Reservar memoria para todas las operaciones
     struct element *operations = malloc(num_operations * sizeof(struct element));
     if (operations == NULL) 
@@ -97,30 +96,30 @@ int main(int argc, const char *argv[])
         perror("Error allocating memory\n");
         exit(EXIT_FAILURE);
     }
-
+    
     // Almacenar las operaciones en el array
-    char op[10];
     for (int i = 0; i < num_operations; i++) 
     {
-        if (fscanf(file, "%d %s %d", &operations[i].product_id, op, &operations[i].units) !=3)
+        if (fscanf(file, "%d", &operations[i].product_id) != 1) 
+        {
+            perror("Error reading product id\n");
+            exit(EXIT_FAILURE);
+        }
+        char operation[10];
+        if (fscanf(file, "%10s", operation) != 1) 
         {
             perror("Error reading operation\n");
             exit(EXIT_FAILURE);
         }
-        if (strcmp(op, "PURCHASE") == 0){
-            operations[i].op = 1;
-        }
-        else if (strcmp(op, "SALE") == 0){
-            operations[i].op = 2;
-        }
-        else {
-            perror("Error type operation");
+        strcpy(operations[i].op, operation);
+
+        if (fscanf(file, "%d", &operations[i].units) != 1) 
+        {
+            perror("Error reading units\n");
             exit(EXIT_FAILURE);
         }
-        printf("%d, %d, %d\n", operations[i].product_id, operations[i].op, operations[i].units);
-            
+        
     }
-
     
     //Calcular número de operaciones por productor
     int ops_per_prod = num_operations / num_producers;
@@ -175,7 +174,6 @@ int main(int argc, const char *argv[])
         pthread_join(consumer_threads[i], NULL);
     }
 
-    fclose(file);
 
     // Liberar la memoria asignada para las operaciones
     free(operations);
@@ -183,6 +181,7 @@ int main(int argc, const char *argv[])
     // Liberar la cola
     queue_destroy(queue);
 
+    fclose(file);
 
     // Output
     printf("Total: %d euros\n", profits);
@@ -207,8 +206,10 @@ void *producer(void *arg) {
     // Bucle para procesar las operaciones asignadas
     for (int i = start_index; i <= end_index; i++) {
         // Obtener los datos de la operación del archivo
-        int product_id, op, units;
-        fscanf(file, "%d %d %d", &product_id, &op, &units);
+        int product_id;
+        char op[10]; 
+        int units;
+        fscanf(file, "%d %s %d", &product_id, op, &units);
 
         // Crear un elemento con los datos de la operación
         struct element *elem = (struct element *)malloc(sizeof(struct element));
@@ -217,7 +218,8 @@ void *producer(void *arg) {
             pthread_exit(NULL);
         }
         elem->product_id = product_id;
-        elem->op = op;
+        //elem->op = op;
+        strcpy(elem->op, op);
         elem->units = units;
 
         // Insertar el elemento en la cola
@@ -256,14 +258,12 @@ void *consumer(void *arg) {
 
         // Procesar la operación contenida en el elemento
         int product_id = elem->product_id;
-        int op = elem->op;
         int units = elem->units;
-
         // Calcular el beneficio y actualizar el stock parcial
-        if (op == PURCHASE) {
+        if (strcmp(elem->op, "PURCHASE") == 0) {
             // Actualizar el stock parcial
             partial_stock[product_id - 1] += units;
-        } else if (op == SALE) {
+        } else if (strcmp(elem->op, "SALE") == 0) {
             // Verificar si hay suficiente stock para realizar la venta
             if (partial_stock[product_id - 1] >= units) {
                 // Actualizar el stock parcial
@@ -291,5 +291,4 @@ void *consumer(void *arg) {
     // Finalizar el hilo y devolver los beneficios y el stock parcial
     pthread_exit(NULL);
 }
-
 
