@@ -17,23 +17,20 @@
 #define SALE 2
 
 
-// Array para almacenar el numero de operaciones de estructuras de tipo element para pasarselo a cada hilo 
-// Estructura para pasar argumentos a los hilos con los ídices de los productos y el array
-
-
-
 // Estructura para pasar los argumentos al hilo productor
-typedef struct ProducerArgs {
-    int start_index;
-    struct element *operations;
-    int max_op;
+typedef struct ProducerArgs 
+{
+    int start_index;        // Índice de la primera operación
+    struct element *operations; // Puntero a las operaciones
+    int max_op;             // Número máximo de operaciones
 }t_producer_args;
 
 // Estructura para pasar argumentos al hilo consumidor
-typedef struct ConsumerArgs {
-    queue *queue;      // Cola compartida
+typedef struct ConsumerArgs 
+{
     int *profits;        // Puntero a las ganancias
     int *product_stock;  // Puntero al stock de productos
+    int max_op;          // Número máximo de operaciones
 }t_consumer_arg;
 
 queue *buffer;
@@ -41,6 +38,7 @@ pthread_mutex_t mutex;
 pthread_cond_t condProducers;
 pthread_cond_t condConsumers;
 int num_producers;
+int num_consumers;
 
 // Precios unitarios y de compra de productos
 int unit_price[5] = {2, 5, 15, 25, 100};
@@ -66,7 +64,7 @@ int main(int argc, const char *argv[])
 
     // Variables de argumentos
     int num_producers = atoi(argv[2]);
-    //int num_consumers = atoi(argv[3]);
+    int num_consumers = atoi(argv[3]);
     int buff_size = atoi(argv[4]);
 
     // Creación de la cola
@@ -96,7 +94,8 @@ int main(int argc, const char *argv[])
 
 
     // Reservar memoria para todas las operaciones
-    t_producer_args * argumentos = malloc(num_producers * sizeof(t_producer_args));
+    t_producer_args * argumentos_prod = malloc(num_producers * sizeof(t_producer_args));
+    t_consumer_arg * argumentos_cons = malloc(num_consumers * sizeof(t_consumer_arg));
     struct element *operations = malloc(num_operations * sizeof(struct element));
     if (operations == NULL) 
     {
@@ -113,10 +112,12 @@ int main(int argc, const char *argv[])
             perror("Error reading operation\n");
             exit(EXIT_FAILURE);
         }
-        if (strcmp(op, "PURCHASE") == 0){
+        if (strcmp(op, "PURCHASE") == 0)
+        {
             operations[i].op = 1;
         }
-        else if (strcmp(op, "SALE") == 0){
+        else if (strcmp(op, "SALE") == 0)
+        {
             operations[i].op = 2;
         }
         else {
@@ -125,38 +126,70 @@ int main(int argc, const char *argv[])
         }        
             
     }
-    for (int j = 0; j < num_producers; j++){
-        argumentos[j].operations = operations;
+    for (int j = 0; j < num_producers; j++)
+    {
+        argumentos_prod[j].operations = operations;
     
-         /*for (int i = 0; i < num_operations; i++){
-            printf("%d, %d, %d\n", argumentos->operations[i].product_id, argumentos->operations[i].op, argumentos->operations[i].units);}*/
     }
+
+    fclose(file);
     
     //Calcular número de operaciones por productor
     int ops_per_prod = num_operations / num_producers;
-    int extra_ops= num_operations % num_producers;
+    int extra_ops_prod = num_operations % num_producers;
 
     //Inicializar cola
     buffer = queue_init(buff_size);
     
     // Creación de hilos productores
     pthread_t producer_threads[num_producers];
-    for (int i = 0; i < num_producers; i++){
-        printf("he entrado\n");
-        argumentos[i].start_index = i;
-        argumentos[i].max_op = ops_per_prod;
-        if (extra_ops != 0){
-            argumentos[i].max_op += extra_ops;
-            extra_ops = 0;
+    for (int i = 0; i < num_producers; i++)
+    {
+        argumentos_prod[i].start_index = i;
+        argumentos_prod[i].max_op = ops_per_prod;
+        if (extra_ops_prod != 0){
+            argumentos_prod[i].max_op += extra_ops_prod;
+            extra_ops_prod = 0;
         }
-        if (pthread_create(&producer_threads[i], NULL, producer, &argumentos[i]) != 0){
+        if (pthread_create(&producer_threads[i], NULL, producer, &argumentos_prod[i]) != 0)
+        {
             perror("ERROR creating producer thread\n");
             exit(EXIT_FAILURE);
         }
         
     }
-    for (int i = 0; i < num_producers; i++){
+    // Calcular número de operaciones por consumidor
+    int ops_per_cons = num_operations / num_consumers;
+    int extra_ops_cons = num_operations % num_consumers;
+
+    // Creación de hilos consumidores
+    pthread_t consumer_threads[num_consumers];
+    for (int i = 0; i < num_consumers; i++)
+    {
+        argumentos_cons[i].profits = &profits;
+        argumentos_cons[i].product_stock = product_stock;
+        argumentos_cons[i].max_op = ops_per_cons;
+        if (extra_ops_cons != 0)
+        {
+            argumentos_cons[i].max_op += extra_ops_cons;
+            extra_ops_cons = 0;
+        }
+        if (pthread_create(&consumer_threads[i], NULL, consumer, &argumentos_cons[i]) != 0)
+        {
+            perror("ERROR creating consumer thread\n");
+            exit(EXIT_FAILURE);
+
+        }
+    }
+
+    for (int i = 0; i < num_producers; i++)
+    {
         pthread_join(producer_threads[i], NULL);
+    }
+
+    for (int i = 0; i < num_consumers; i++)
+    {
+        pthread_join(consumer_threads[i], NULL);
     }
 
 
@@ -165,9 +198,6 @@ int main(int argc, const char *argv[])
 
 
 
-
-
-    fclose(file);
 
     // Liberar la memoria asignada para las operaciones
     free(operations);
@@ -190,8 +220,12 @@ int main(int argc, const char *argv[])
 
 void *consumer(void *arg)
 {
+    printf("Hilo consumidor creado\n");
     pthread_exit(NULL);
 }
+
+
+
 
 void *producer(void *arg){
     printf("Hilo productor creado\n");
@@ -200,20 +234,21 @@ void *producer(void *arg){
     int max_op = args->max_op;
     int index = args->start_index;
     struct element *operation = malloc(sizeof(operation));
+    //
     //hacer los mutex
     while(ops_realizadas < max_op )
     {
         pthread_mutex_lock(&mutex);
-        while (queue_full(buffer))
+        /*while (queue_full(buffer))
         {
             pthread_cond_wait(&condProducers, &mutex);
-        }
-    operation = &args->operations[index];
-    queue_put(buffer, operation);
-    ops_realizadas++;
-    index += num_producers;
-    pthread_cond_signal(&condConsumers);
-    pthread_mutex_unlock(&mutex);
+        }*/
+        operation = &args->operations[index];
+        queue_put(buffer, operation);
+        ops_realizadas++;
+        index += num_producers;
+        //pthread_cond_signal(&condConsumers);
+        pthread_mutex_unlock(&mutex);
         
          
     }
