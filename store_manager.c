@@ -126,10 +126,15 @@ int main(int argc, const char *argv[])
         }        
             
     }
+
     for (int j = 0; j < num_producers; j++)
     {
         argumentos_prod[j].operations = operations;
-    
+        
+        /*for (int i = 0; i < num_operations; i++)
+        {
+            printf("%d %d %d\n", operations[i].product_id, operations[i].op, operations[i].units);
+        }*/
     }
 
     fclose(file);
@@ -193,17 +198,16 @@ int main(int argc, const char *argv[])
     }
 
 
-
-
-
-
-
-
     // Liberar la memoria asignada para las operaciones
     free(operations);
 
     // Liberar la cola
     queue_destroy(queue);
+
+    // Cerrar los mutex y las variables de condición
+    pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&condProducers);
+    pthread_cond_destroy(&condConsumers);
 
 
     // Output
@@ -221,6 +225,39 @@ int main(int argc, const char *argv[])
 void *consumer(void *arg)
 {
     printf("Hilo consumidor creado\n");
+    t_consumer_arg *args = (t_consumer_arg *) arg;
+    int ops_realizadas = 0;
+    int *profits = args->profits;
+    int *product_stock = args->product_stock;
+    int max_op = args->max_op;
+    struct element *operation = malloc(sizeof(struct element));
+
+    while (ops_realizadas < max_op)
+    {
+        pthread_mutex_lock(&mutex);
+        while (queue_empty(buffer))
+        {
+            pthread_cond_wait(&condConsumers, &mutex);
+        }
+        operation = queue_get(buffer);
+        
+        if (operation->op == 1)
+        {
+            int price = purchase_price[operation->product_id];
+            *profits -= price * operation->units;
+            product_stock[operation->product_id] += operation->units;
+        }
+        else
+        {
+            int price = unit_price[operation->product_id];
+            *profits += price * operation->units;
+            product_stock[operation->product_id] -= operation->units;
+        }
+        ops_realizadas++;
+        pthread_cond_signal(&condProducers);
+        pthread_mutex_unlock(&mutex);
+
+    }
     pthread_exit(NULL);
 }
 
@@ -233,21 +270,21 @@ void *producer(void *arg){
     t_producer_args *args = (t_producer_args *) arg;
     int max_op = args->max_op;
     int index = args->start_index;
-    struct element *operation = malloc(sizeof(operation));
-    //
+    struct element *operation = malloc(sizeof(struct element));
+    
     //hacer los mutex
     while(ops_realizadas < max_op )
     {
         pthread_mutex_lock(&mutex);
-        /*while (queue_full(buffer))
+        while (queue_full(buffer))
         {
             pthread_cond_wait(&condProducers, &mutex);
-        }*/
+        }
         operation = &args->operations[index];
         queue_put(buffer, operation);
         ops_realizadas++;
         index += num_producers;
-        //pthread_cond_signal(&condConsumers);
+        pthread_cond_signal(&condConsumers);
         pthread_mutex_unlock(&mutex);
         
          

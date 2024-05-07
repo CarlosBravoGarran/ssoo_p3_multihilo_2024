@@ -25,5 +25,6 @@ int queue_put (queue *q, struct element* elem);
 struct element * queue_get(queue *q);
 int queue_empty (queue *q);
 int queue_full(queue *q);
+int queue_print(queue *q);
 
 #endif
