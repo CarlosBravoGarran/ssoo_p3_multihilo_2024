@@ -36,6 +36,12 @@ typedef struct ConsumerArgs {
     int *product_stock;  // Puntero al stock de productos
 }t_consumer_arg;
 
+queue *buffer;
+pthread_mutex_t mutex;
+pthread_cond_t condProducers;
+pthread_cond_t condConsumers;
+int num_producers;
+
 // Precios unitarios y de compra de productos
 int unit_price[5] = {2, 5, 15, 25, 100};
 int purchase_price[5] = {3, 10, 20, 40, 125};
@@ -129,6 +135,9 @@ int main(int argc, const char *argv[])
     //Calcular número de operaciones por productor
     int ops_per_prod = num_operations / num_producers;
     int extra_ops= num_operations % num_producers;
+
+    //Inicializar cola
+    buffer = queue_init(buff_size);
     
     // Creación de hilos productores
     pthread_t producer_threads[num_producers];
@@ -185,12 +194,28 @@ void *consumer(void *arg)
 }
 
 void *producer(void *arg){
-    printf("hilo prod creado\n");
+    printf("Hilo productor creado\n");
     int ops_realizadas = 0;
     t_producer_args *args = (t_producer_args *) arg;
     int max_op = args->max_op;
-    while(ops_realizadas < max_op ){
-
+    int index = args->start_index;
+    struct element *operation = malloc(sizeof(operation));
+    //hacer los mutex
+    while(ops_realizadas < max_op )
+    {
+        pthread_mutex_lock(&mutex);
+        while (queue_full(buffer))
+        {
+            pthread_cond_wait(&condProducers, &mutex);
+        }
+    operation = &args->operations[index];
+    queue_put(buffer, operation);
+    ops_realizadas++;
+    index += num_producers;
+    pthread_cond_signal(&condConsumers);
+    pthread_mutex_unlock(&mutex);
+        
+         
     }
     pthread_exit(NULL);
 }
