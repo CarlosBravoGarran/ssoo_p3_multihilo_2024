@@ -112,7 +112,8 @@ int main(int argc, const char *argv[])
             perror("Error reading operation\n");
             exit(EXIT_FAILURE);
         }
-        if (strcmp(op, "PURCHASE") == 0){
+        if (strcmp(op, "PURCHASE") == 0)
+        {
             operations[i].op = 1;
         }
         else if (strcmp(op, "SALE") == 0){
@@ -157,27 +158,27 @@ int main(int argc, const char *argv[])
     // Calcular numero de operaciones por consumidor
     int ops_per_cons = num_operations / num_consumers;
     int extra_ops_cons = num_operations % num_consumers;
-    int max_ops_per_cons;
 
     
     pthread_t consumer_threads[num_consumers];
-        
     for (int i = 0; i < num_consumers; i++){
-        max_ops_per_cons = ops_per_cons;
-        
-        if (extra_ops_cons != 0)
-        {
+
+        int max_ops_per_cons = ops_per_cons;
+        if (extra_ops_cons != 0){
             max_ops_per_cons += 1;
             extra_ops_cons -= 1;
         }
-        if (pthread_create(&consumer_threads[i], NULL, consumer, &max_ops_per_cons) != 0)
-        {
+
+        int *max_ops_ptr = malloc(sizeof(int));
+        *max_ops_ptr = max_ops_per_cons;
+
+        printf("max_ops = %d\n", max_ops_per_cons);
+        if (pthread_create(&consumer_threads[i], NULL, consumer, max_ops_ptr) != 0){
             perror("ERROR creating consumer thread\n");
             exit(EXIT_FAILURE);
         }
-        
-    }
 
+    }
 
 
     // Creación de hilos consumidores
@@ -194,7 +195,7 @@ int main(int argc, const char *argv[])
         pthread_join(consumer_threads[i], &thread_result);
         t_consumer_results *result = (t_consumer_results *)thread_result;
      profits += result->profit;
-    }
+     }
 
 
 
@@ -227,6 +228,7 @@ void *consumer(void *arg)
     //printf("Hilo consumidor creado\n");
     int max_op = *((int*)arg);
     int ops_realizadas = 0;
+    printf("Max_op: %d\n", max_op);
     t_consumer_results *result = malloc(sizeof(t_consumer_results));
     result->profit = 0;
 
