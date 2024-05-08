@@ -158,12 +158,12 @@ int main(int argc, const char *argv[])
     // Calcular numero de operaciones por consumidor
     int ops_per_cons = num_operations / num_consumers;
     int extra_ops_cons = num_operations % num_consumers;
-
+    int max_ops_per_cons;
     
     pthread_t consumer_threads[num_consumers];
     for (int i = 0; i < num_consumers; i++){
 
-        int max_ops_per_cons = ops_per_cons;
+        max_ops_per_cons = ops_per_cons;
         if (extra_ops_cons != 0){
             max_ops_per_cons += 1;
             extra_ops_cons -= 1;
