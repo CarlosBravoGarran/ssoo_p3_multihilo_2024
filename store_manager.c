@@ -49,7 +49,7 @@ queue *buffer = NULL;
 
 int main(int argc, const char *argv[]) 
 {
-    // Variablencls
+    // Variables
     int profits = 0;
     int product_stock[5] = {0};
 
@@ -124,17 +124,25 @@ int main(int argc, const char *argv[])
         }        
             
     }
+
     for (int j = 0; j < num_producers; j++)
     {
         argumentos_prod[j].operations = operations;
     }
 
-    fclose(file);
+    if (num_operations < num_producers)
+    {
+        perror("Error: number of operations is less than the number of producers\n");
+        exit(EXIT_FAILURE);
+    }
+
+    fclose(file); // Cerramos el archivo
     
+
     //Calcular número de operaciones por productor
     int ops_per_prod = num_operations / num_producers;
     int extra_ops_prod= num_operations % num_producers;
-    
+        
     // Creación de hilos productores
     buffer = queue_init(buff_size);
 
@@ -161,6 +169,7 @@ int main(int argc, const char *argv[])
     int extra_ops_cons = num_operations % num_consumers;
     int max_ops_per_cons;
     
+    // Creación de hilos consumidores
     pthread_t consumer_threads[num_consumers];
     for (int i = 0; i < num_consumers; i++)
     {
@@ -180,33 +189,34 @@ int main(int argc, const char *argv[])
             perror("ERROR creating consumer thread\n");
             exit(EXIT_FAILURE);
         }
-
     }
 
 
-    // Creación de hilos consumidores
-    
+    // Esperar a que los hilos productores terminen
     for (int i = 0; i < num_producers; i++)
     {
         pthread_join(producer_threads[i], NULL);
     }
-
+ 
+    // Esperar a que los hilos consumidores terminen y recoger los resultados
     void *thread_result;
     for (int i = 0; i < num_consumers; i++)
     {
 
         pthread_join(consumer_threads[i], &thread_result);
         t_consumer_results *result = (t_consumer_results *)thread_result;
-        profits += result->profit;
+        profits += result->profit;                // Sumar el profit de cada consumidor
         for (int j = 0; j < 5; j++)
         {
-            product_stock[j] += result->product_stock[j];
+            product_stock[j] += result->product_stock[j];       // Sumar el stock de cada producto
         }
-     }
+        free(result); // Liberar memoria
+    }
 
 
     // Liberar la memoria asignada para las operaciones
     free(operations);
+    free(argumentos_prod);
 
     // Liberar la cola
     queue_destroy(queue);
@@ -229,6 +239,7 @@ int main(int argc, const char *argv[])
 
 void *consumer(void *arg)
 {
+    // Variables
     int max_op = *((int*)arg);
     int ops_realizadas = 0;
     t_consumer_results *result = malloc(sizeof(t_consumer_results));
@@ -238,6 +249,7 @@ void *consumer(void *arg)
         result->product_stock[i] = 0;
     }
     
+    // Bucle de operaciones
     while (ops_realizadas < max_op)
     {
         // Entramos en la seccion critica
@@ -250,12 +262,13 @@ void *consumer(void *arg)
         struct element *operation;
         operation = queue_get(buffer);
         int aux_profit = 0;
+
+        // Comprobamos si es una compra o una venta
         if (operation->op == 1)
         {
             int price = purchase_price[operation->product_id-1];
             aux_profit -=  operation->units * price;
             result->product_stock[operation->product_id-1] += operation->units;
-
         }
         else
         {
@@ -263,10 +276,11 @@ void *consumer(void *arg)
             aux_profit += operation->units * price;
             result->product_stock[operation->product_id-1] -= operation->units;
         }
-        result->profit += aux_profit;
 
-        pthread_cond_signal(&condProducers);
-        pthread_mutex_unlock(&mutex);
+        result->profit += aux_profit;      // Sumamos el profit de la operación
+
+        pthread_cond_signal(&condProducers);    // Manda señal al productor de que ha consumido datos
+        pthread_mutex_unlock(&mutex);          // Salimos de la sección crítica
 
         ops_realizadas ++;
     }
@@ -275,7 +289,7 @@ void *consumer(void *arg)
 
 void *producer(void *arg)
 {
-
+    // Variables
     int ops_realizadas = 0;
     t_producer_args *args = (t_producer_args *) arg;
     int max_op = args->max_ops;
@@ -299,7 +313,7 @@ void *producer(void *arg)
         ops_realizadas ++;
 
         pthread_cond_signal(&condConsumers);    // Manda señal al consumidor de que ha añadido datos
-        pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&mutex);           // Salimos de la sección crítica
     }
     pthread_exit(NULL);
 }
