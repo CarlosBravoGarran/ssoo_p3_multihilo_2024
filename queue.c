@@ -80,30 +80,4 @@ int queue_destroy(queue *q)
   return 0;
 }
 
-int queue_print(queue *q)
-{
-    for (int i = 0; i < q->count; i++){
-        printf("%d",q->elements[i].product_id);
-    }
-    return 0;
-}
 
-/*
-int main(void){
-    printf("hola\n");
-    struct element *elemento = malloc(sizeof(struct element));
-    elemento->product_id = 1;
-    elemento->op = 1;
-    elemento->units = 50;
-    //printf("ID = %d, OP = %d, UNITS = %d\n", elemento->product_id, elemento->op, elemento->units);
-    
-    int size = 10;
-    queue *my_queue = queue_init(10);
-    queue_put(my_queue, elemento);
-    queue_print(my_queue);
-    printf("Hola");
-    
-
-    return 0;
-}
-*/
