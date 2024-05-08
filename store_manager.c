@@ -193,7 +193,11 @@ int main(int argc, const char *argv[])
 
         pthread_join(consumer_threads[i], &thread_result);
         t_consumer_results *result = (t_consumer_results *)thread_result;
-     profits += result->profit;
+        profits += result->profit;
+        //printf("Stock %d: %d\n", i+1, result->product_stock[i]);
+        for (int j = 0; j < 5; j++){
+            product_stock[j] += result->product_stock[j];
+        }
      }
 
 
@@ -229,7 +233,10 @@ void *consumer(void *arg)
     int ops_realizadas = 0;
     t_consumer_results *result = malloc(sizeof(t_consumer_results));
     result->profit = 0;
-
+    for (int i = 0; i < 5; i++){
+        result->product_stock[i] = 0;
+    }
+    
     while (ops_realizadas < max_op)
     {
         // Entramos en la seccion critica
@@ -257,10 +264,13 @@ void *consumer(void *arg)
             result->product_stock[operation->product_id-1] -= operation->units;
         }
         result->profit += aux_profit;
-        printf("Result: %d\n", result->profit);
+        //printf("Result: %d\n", result->profit);
         pthread_cond_signal(&condProducers);
         pthread_mutex_unlock(&mutex);
         ops_realizadas ++;
+        //for (int i = 0; i < 5; i++){
+           // printf("Stock %d: %d\n", i+1, result->product_stock[i]);
+        //}
     }
     pthread_exit((void *)result);
 }
