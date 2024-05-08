@@ -172,7 +172,6 @@ int main(int argc, const char *argv[])
         int *max_ops_ptr = malloc(sizeof(int));
         *max_ops_ptr = max_ops_per_cons;
 
-        printf("max_ops = %d\n", max_ops_per_cons);
         if (pthread_create(&consumer_threads[i], NULL, consumer, max_ops_ptr) != 0){
             perror("ERROR creating consumer thread\n");
             exit(EXIT_FAILURE);
@@ -228,7 +227,6 @@ void *consumer(void *arg)
     //printf("Hilo consumidor creado\n");
     int max_op = *((int*)arg);
     int ops_realizadas = 0;
-    printf("Max_op: %d\n", max_op);
     t_consumer_results *result = malloc(sizeof(t_consumer_results));
     result->profit = 0;
 
