@@ -160,11 +160,6 @@ int main(int argc, const char *argv[])
     int max_ops_per_cons;
 
     
-    t_consumer_results *resultados = malloc(num_consumers * sizeof(t_consumer_results)); 
-    for (int i = 0; i < num_consumers; i++)
-    {
-        resultados[i].profit = 0;
-    }
     pthread_t consumer_threads[num_consumers];
         
     for (int i = 0; i < num_consumers; i++){
