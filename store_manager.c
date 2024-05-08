@@ -144,8 +144,8 @@ int main(int argc, const char *argv[])
         argumentos_prod[i].start_index = i;
         argumentos_prod[i].max_ops = ops_per_prod;
         if (extra_ops_prod != 0){
-            argumentos_prod[i].max_ops += extra_ops_prod;
-            extra_ops_prod = 0;
+            argumentos_prod[i].max_ops += 1; 
+            extra_ops_prod -= 1;
         }
         if (pthread_create(&producer_threads[i], NULL, producer, &argumentos_prod[i]) != 0){
             perror("ERROR creating producer thread\n");
@@ -172,8 +172,8 @@ int main(int argc, const char *argv[])
         
         if (extra_ops_cons != 0)
         {
-            max_ops_per_cons += extra_ops_cons;
-            extra_ops_cons = 0;
+            max_ops_per_cons += 1;
+            extra_ops_cons -= 1;
         }
         if (pthread_create(&consumer_threads[i], NULL, consumer, &max_ops_per_cons) != 0)
         {
@@ -192,9 +192,9 @@ int main(int argc, const char *argv[])
         pthread_join(producer_threads[i], NULL);
     }
 
+    void *thread_result;
     for (int i = 0; i < num_consumers; i++)
     {
-        void *thread_result;
 
         pthread_join(consumer_threads[i], &thread_result);
         t_consumer_results *result = (t_consumer_results *)thread_result;
@@ -245,7 +245,7 @@ void *consumer(void *arg)
             // Esperamos a la señal del productor
             pthread_cond_wait(&condConsumers, &mutex);
         }
-        struct element *operation = malloc(sizeof(struct element));
+        struct element *operation;
         operation = queue_get(buffer);
         int aux_profit = 0;
         if (operation->op == 1)
@@ -261,13 +261,12 @@ void *consumer(void *arg)
             aux_profit += operation->units * price;
             result->product_stock[operation->product_id-1] -= operation->units;
         }
-        ops_realizadas ++;
         result->profit += aux_profit;
         printf("Result: %d\n", result->profit);
         pthread_cond_signal(&condProducers);
         pthread_mutex_unlock(&mutex);
+        ops_realizadas ++;
     }
-
     pthread_exit((void *)result);
 }
 
