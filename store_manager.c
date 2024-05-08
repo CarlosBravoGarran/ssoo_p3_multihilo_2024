@@ -17,20 +17,17 @@
 #define SALE 2
 
 
-// Array para almacenar el numero de operaciones de estructuras de tipo element para pasarselo a cada hilo 
-// Estructura para pasar argumentos a los hilos con los ídices de los productos y el array
-
-
-
 // Estructura para pasar los argumentos al hilo productor
-typedef struct ProducerArgs {
+typedef struct ProducerArgs 
+{
     int start_index;
     struct element *operations;
     int max_ops;
 }t_producer_args;
 
 // Estructura para pasar argumentos al hilo consumidor
-typedef struct ConsumerResults {
+typedef struct ConsumerResults 
+{
     int profit;            // Profit que devolverá
     int product_stock[5];   // Stock que devolverá
 }t_consumer_results;
@@ -116,21 +113,22 @@ int main(int argc, const char *argv[])
         {
             operations[i].op = 1;
         }
-        else if (strcmp(op, "SALE") == 0){
+        else if (strcmp(op, "SALE") == 0)
+        {
             operations[i].op = 2;
         }
-        else {
+        else 
+        {
             perror("Error type operation");
             exit(EXIT_FAILURE);
         }        
             
     }
-    for (int j = 0; j < num_producers; j++){
+    for (int j = 0; j < num_producers; j++)
+    {
         argumentos_prod[j].operations = operations;
-    
-         /*for (int i = 0; i < num_operations; i++){
-            printf("%d, %d, %d\n", argumentos->operations[i].product_id, argumentos->operations[i].op, argumentos->operations[i].units);}*/
     }
+
     fclose(file);
     
     //Calcular número de operaciones por productor
@@ -141,18 +139,21 @@ int main(int argc, const char *argv[])
     buffer = queue_init(buff_size);
 
     pthread_t producer_threads[num_producers];
-    for (int i = 0; i < num_producers; i++){
+    for (int i = 0; i < num_producers; i++)
+    {
         argumentos_prod[i].start_index = i;
         argumentos_prod[i].max_ops = ops_per_prod;
-        if (extra_ops_prod != 0){
+        if (extra_ops_prod != 0)
+        {
             argumentos_prod[i].max_ops += 1; 
             extra_ops_prod -= 1;
         }
-        if (pthread_create(&producer_threads[i], NULL, producer, &argumentos_prod[i]) != 0){
+
+        if (pthread_create(&producer_threads[i], NULL, producer, &argumentos_prod[i]) != 0)
+        {
             perror("ERROR creating producer thread\n");
             exit(EXIT_FAILURE);
         }
-        
     }
     
     // Calcular numero de operaciones por consumidor
@@ -161,10 +162,12 @@ int main(int argc, const char *argv[])
     int max_ops_per_cons;
     
     pthread_t consumer_threads[num_consumers];
-    for (int i = 0; i < num_consumers; i++){
+    for (int i = 0; i < num_consumers; i++)
+    {
 
         max_ops_per_cons = ops_per_cons;
-        if (extra_ops_cons != 0){
+        if (extra_ops_cons != 0)
+        {
             max_ops_per_cons += 1;
             extra_ops_cons -= 1;
         }
@@ -172,7 +175,8 @@ int main(int argc, const char *argv[])
         int *max_ops_ptr = malloc(sizeof(int));
         *max_ops_ptr = max_ops_per_cons;
 
-        if (pthread_create(&consumer_threads[i], NULL, consumer, max_ops_ptr) != 0){
+        if (pthread_create(&consumer_threads[i], NULL, consumer, max_ops_ptr) != 0)
+        {
             perror("ERROR creating consumer thread\n");
             exit(EXIT_FAILURE);
         }
@@ -194,14 +198,11 @@ int main(int argc, const char *argv[])
         pthread_join(consumer_threads[i], &thread_result);
         t_consumer_results *result = (t_consumer_results *)thread_result;
         profits += result->profit;
-        //printf("Stock %d: %d\n", i+1, result->product_stock[i]);
-        for (int j = 0; j < 5; j++){
+        for (int j = 0; j < 5; j++)
+        {
             product_stock[j] += result->product_stock[j];
         }
      }
-
-
-
 
 
     // Liberar la memoria asignada para las operaciones
@@ -228,12 +229,12 @@ int main(int argc, const char *argv[])
 
 void *consumer(void *arg)
 {
-    //printf("Hilo consumidor creado\n");
     int max_op = *((int*)arg);
     int ops_realizadas = 0;
     t_consumer_results *result = malloc(sizeof(t_consumer_results));
     result->profit = 0;
-    for (int i = 0; i < 5; i++){
+    for (int i = 0; i < 5; i++)
+    {
         result->product_stock[i] = 0;
     }
     
@@ -241,7 +242,6 @@ void *consumer(void *arg)
     {
         // Entramos en la seccion critica
         pthread_mutex_lock(&mutex);
-        //result->profit = 0;
         while(queue_empty(buffer))
         {
             // Esperamos a la señal del productor
@@ -264,35 +264,35 @@ void *consumer(void *arg)
             result->product_stock[operation->product_id-1] -= operation->units;
         }
         result->profit += aux_profit;
-        //printf("Result: %d\n", result->profit);
+
         pthread_cond_signal(&condProducers);
         pthread_mutex_unlock(&mutex);
+
         ops_realizadas ++;
-        //for (int i = 0; i < 5; i++){
-           // printf("Stock %d: %d\n", i+1, result->product_stock[i]);
-        //}
     }
     pthread_exit((void *)result);
 }
 
-void *producer(void *arg){
-    //printf("hilo productor creado\n");
+void *producer(void *arg)
+{
+
     int ops_realizadas = 0;
     t_producer_args *args = (t_producer_args *) arg;
     int max_op = args->max_ops;
     int index = args->start_index;
     struct element *operation = malloc(sizeof(struct element));
     
-    while(ops_realizadas < max_op ){
+    while(ops_realizadas < max_op )
+    {
         // Entramos en la seccion critica
         pthread_mutex_lock(&mutex);
 
-        while(queue_full(buffer)){
+        while(queue_full(buffer))
+        {
             // Espera la señal de los consumidores
             pthread_cond_wait(&condProducers, &mutex);
         }
         operation = &args->operations[index];
-
         queue_put(buffer, operation);           // Agremamos datos al buffer circular
 
         index += num_producers;
@@ -300,7 +300,6 @@ void *producer(void *arg){
 
         pthread_cond_signal(&condConsumers);    // Manda señal al consumidor de que ha añadido datos
         pthread_mutex_unlock(&mutex);
-
     }
     pthread_exit(NULL);
 }
