@@ -56,21 +56,21 @@ int main(int argc, const char *argv[])
     // Comprobación de argumentos
     if (argc != 5)
     {
-        fprintf(stderr, "Incorrect structure: store_manager <file_name><num_producers><num_consumers><buff_size>");
+        fprintf(stderr, "Incorrect structure: store_manager <file_name><num_producers><num_consumers><buff_size>\n");
         exit(EXIT_FAILURE);
 
-    }
-
-    if (atoi(argv[2]) <= 0 || atoi(argv[3]) <= 0 || atoi(argv[4]) <= 0)
-    {
-        fprintf(stderr, "Error: number of producers, consumers and buffer size must be greater than 0\n");
-        exit(EXIT_FAILURE);
     }
 
     // Variables de argumentos
     num_producers = atoi(argv[2]);
     num_consumers = atoi(argv[3]);
     int buff_size = atoi(argv[4]);
+
+    if (num_producers <= 0 || num_consumers <= 0 || buff_size <= 0)
+    {
+        fprintf(stderr, "Error: number of producers, consumers and buffer must be numbers greater than 0\n");
+        exit(EXIT_FAILURE);
+    } 
 
     // Creación de la cola
     queue *queue = queue_init(buff_size);
