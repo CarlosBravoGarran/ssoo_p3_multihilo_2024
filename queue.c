@@ -10,14 +10,14 @@
 queue *queue_init(int size) {
     queue *q = (queue *)malloc(sizeof(queue));
     if (q == NULL) {
-        fprintf(stderr, "Error: No se pudo asignar memoria para la cola\n");
+        fprintf(stderr, "Error: Could not allocate memory for the queue\n");
         return NULL;
     }
 
     // Inicializar los miembros de la estructura t_queue
     q->elements = (struct element *)malloc(size * sizeof(struct element));
     if (q->elements == NULL) {
-        fprintf(stderr, "Error: No se pudo asignar memoria para los elementos de la cola\n");
+        fprintf(stderr, "Error: Could not allocate memory for the queue elements\n");
         free(q); // Liberar la memoria asignada para la estructura de la cola
         return NULL;
     }
