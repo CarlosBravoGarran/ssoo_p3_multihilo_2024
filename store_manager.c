@@ -125,7 +125,7 @@ int main(int argc, const char *argv[])
         }
         else 
         {
-            perror("Error type operation");
+            perror("Error type operation\n");
             exit(EXIT_FAILURE);
         }        
             
