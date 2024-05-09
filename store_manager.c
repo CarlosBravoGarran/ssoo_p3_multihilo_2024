@@ -61,6 +61,12 @@ int main(int argc, const char *argv[])
 
     }
 
+    if (atoi(argv[2]) <= 0 || atoi(argv[3]) <= 0 || atoi(argv[4]) <= 0)
+    {
+        fprintf(stderr, "Error: number of producers, consumers and buffer size must be greater than 0\n");
+        exit(EXIT_FAILURE);
+    }
+
     // Variables de argumentos
     num_producers = atoi(argv[2]);
     num_consumers = atoi(argv[3]);
