@@ -1,3 +1,5 @@
+# Sistema multihilo concurrente
+
 ## Introducción
 El propósito principal de esta práctica es implementar un sistema multi-hilo concurrente en C sobre el sistema operativo UNIX/Linux. El sistema debe calcular el beneficio y gestionar el stock de una tienda a partir de un conjunto de operaciones proporcionadas en un archivo específico. Para lograr esto, se utilizan llamadas al sistema POSIX para la gestión de hilos, como pthread_create, pthread_join y pthread_exit.
 
